@@ -1,0 +1,21 @@
+name: AI digest
+
+on:
+  schedule:
+    - cron: "0 5 * * *"   # 08:00 по Москве (cron в UTC)
+  workflow_dispatch:       # кнопка ручного запуска
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install anthropic requests
+      - run: python digest.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
