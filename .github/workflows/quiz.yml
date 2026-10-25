@@ -2,7 +2,7 @@ name: Quiz
 
 on:
   schedule:
-    - cron: "0 16 * * *"   # 19:00 по Москве (cron в UTC)
+    - cron: "0 5 * * *"    # 08:00 по Москве (cron в UTC)
   workflow_dispatch:       # кнопка ручного запуска
 
 concurrency:
