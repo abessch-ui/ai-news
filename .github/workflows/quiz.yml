@@ -1,0 +1,38 @@
+name: Quiz
+
+on:
+  schedule:
+    - cron: "0 16 * * *"   # 19:00 по Москве (cron в UTC)
+  workflow_dispatch:       # кнопка ручного запуска
+
+concurrency:
+  group: quiz              # не запускать два бота одновременно
+  cancel-in-progress: false
+
+permissions:
+  contents: write          # чтобы сохранять историю вопросов (без повторов)
+
+jobs:
+  quiz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install anthropic requests
+      - run: python quiz.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TG_TOKEN: ${{ secrets.QUIZ_TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+      - name: Сохранить историю вопросов
+        if: always()
+        run: |
+          git config user.name "quiz-bot"
+          git config user.email "quiz-bot@users.noreply.github.com"
+          git add quiz_history.json || exit 0
+          git diff --cached --quiet && exit 0
+          git commit -m "Обновить историю вопросов"
+          git pull --rebase && git push
