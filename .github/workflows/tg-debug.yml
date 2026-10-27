@@ -1,0 +1,33 @@
+name: TG debug (temporary)
+
+on:
+  push:
+    branches: [claude/adoring-maxwell-hdbk4y]
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - shell: python
+        run: |
+          import datetime, requests
+          from bs4 import BeautifulSoup
+          now = datetime.datetime.now(datetime.timezone.utc)
+          for ch in ["rvnikita_blog", "ai_newz", "llm_under_hood", "rybakalexey"]:
+              r = requests.get(f"https://t.me/s/{ch}", timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+              soup = BeautifulSoup(r.text, "html.parser")
+              msgs = soup.select("div.tgme_widget_message[data-post]")
+              times = soup.select("time[datetime]")
+              print(f"== {ch}: status={r.status_code} final_url={r.url} len={len(r.text)} "
+                    f"title={soup.title.string if soup.title else None!r} msgs={len(msgs)} times={len(times)}")
+              for m in msgs[-3:]:
+                  t = m.select_one("a.tgme_widget_message_date time[datetime]")
+                  txt = m.select_one("div.tgme_widget_message_text")
+                  print("   ", m.get("data-post"), t["datetime"] if t else None, "text" if txt else "NO TEXT")
+              if not msgs:
+                  print(r.text[:1500])
+          print("now UTC:", now.isoformat())
