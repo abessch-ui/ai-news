@@ -37,7 +37,9 @@ def ask_claude(task, search=True):
             messages.append({"role": "assistant", "content": resp.content})
             continue
         break
-    return "".join(b.text for b in resp.content if b.type == "text").strip()
+    text = "".join(b.text for b in resp.content if b.type == "text").strip()
+    print(f"Claude: stop_reason={resp.stop_reason}, {len(text)} символов")
+    return text
 
 
 def fetch_channel_posts(channel, hours=24):
@@ -68,9 +70,11 @@ def telegram_section():
         except Exception as e:  # один недоступный канал не должен ронять дайджест
             print(f"Не удалось получить @{channel}: {e}")
             continue
+        print(f"@{channel}: постов за сутки — {len(posts)}")
         for p in posts:
             blocks.append(f"Канал @{channel}, пост {p['url']}:\n{p['text']}")
     if not blocks:
+        print("Свежих постов в каналах нет — раздел пропущен")
         return None
     return ask_claude(read_prompt("telegram") + "\n\nПосты:\n\n" + "\n\n---\n\n".join(blocks),
                       search=False)
@@ -94,6 +98,7 @@ def send_telegram(text):
         data = {"chat_id": TG_CHAT_ID, "text": chunk,
                 "parse_mode": "HTML", "disable_web_page_preview": True}
         r = requests.post(url, json=data)
+        print(f"Сообщение {len(chunk)} символов: {r.status_code}")
         if not r.ok:  # если HTML сломан — отправляем простым текстом
             data.pop("parse_mode")
             requests.post(url, json=data).raise_for_status()
